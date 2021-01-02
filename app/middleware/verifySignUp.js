@@ -1,6 +1,34 @@
 const db = require("../models");
-const ROLES = db.ROLES;
+const ROLES = db.roles;
 const User = db.user;
+
+const validate = require("validate.js");
+
+checkParameters = (req, res, next) => {
+  // TODO add check for password strenght
+
+  const constraints = {
+    email: {
+      presence: { allowEmpty: false },
+      email: true,
+    },
+    username: {
+      presence: { allowEmpty: false },
+    },
+    password: {
+      presence: { allowEmpty: false },
+    },
+  };
+
+  const errors = validate(req.body, constraints);
+
+  if (errors) {
+    res.status(400).send({ ...errors });
+    return;
+  }
+
+  next();
+};
 
 checkDuplicateUsernameOrEmail = (req, res, next) => {
   // Username
@@ -51,10 +79,8 @@ checkRolesExisted = (req, res, next) => {
   next();
 };
 
-// TODO add check for valid email string
-// TODO add check for password strenght
-
 const verifySignUp = {
+  checkParameters,
   checkDuplicateUsernameOrEmail,
   checkRolesExisted,
 };

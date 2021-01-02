@@ -15,6 +15,9 @@
     "authentication",
     "mongodb"
   ],
+  "jest": {
+    "testEnvironment": "node"
+  },
   "author": "shooshte",
   "license": "ISC",
   "dependencies": {
@@ -24,7 +27,8 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.11.9"
+    "mongoose": "^5.11.9",
+    "validate.js": "^0.13.1"
   },
   "devDependencies": {
     "jest": "^26.6.3",

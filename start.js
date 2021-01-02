@@ -4,7 +4,7 @@ require("dotenv").config();
 const db = require("./app/models");
 const Role = db.role;
 
-const DB_URL = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}/${process.env.DB_NAME}`;
+const DB_URL = `${db.baseUrl}${process.env.DB_NAME}`;
 
 db.mongoose
   .connect(DB_URL, {
@@ -25,7 +25,7 @@ db.mongoose
 function initial() {
   Role.estimatedDocumentCount((err, count) => {
     if (!err && count === 0) {
-      db.ROLES.forEach((role) => {
+      db.roles.forEach((role) => {
         new Role({
           name: role,
         }).save((err) => {
