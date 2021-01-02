@@ -51,6 +51,9 @@ checkRolesExisted = (req, res, next) => {
   next();
 };
 
+// TODO add check for valid email string
+// TODO add check for password strenght
+
 const verifySignUp = {
   checkDuplicateUsernameOrEmail,
   checkRolesExisted,
