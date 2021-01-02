@@ -92,7 +92,7 @@ exports.signin = (req, res) => {
       // TODO add session invalidation (logout)
 
       var token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-        expiresIn: 86400, // 24 hours
+        expiresIn: 3600, // 1 hours
       });
 
       var authorities = [];
