@@ -2,7 +2,7 @@
   "name": "jwt-auth",
   "version": "1.0.0",
   "description": "Node.js + MongoDB: JWT Authentication & Authorization",
-  "main": "server.js",
+  "main": "start.js",
   "scripts": {
     "develop": "npx nodemon start.js",
     "test": "npx jest",
