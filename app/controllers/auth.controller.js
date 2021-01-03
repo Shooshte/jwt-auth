@@ -88,23 +88,15 @@ exports.signin = (req, res) => {
         });
       }
 
-      // TODO add storing jwt tokens to DB
-      // TODO add session invalidation (logout)
-
       var token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-        expiresIn: 3600, // 1 hours
+        expiresIn: 3600, // 1 hour
       });
 
-      var authorities = [];
-
-      for (let i = 0; i < user.roles.length; i++) {
-        authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
-      }
       res.status(200).send({
         id: user._id,
         username: user.username,
         email: user.email,
-        roles: authorities,
+        roles: user.roles.map((role) => role.name),
         accessToken: token,
       });
     });

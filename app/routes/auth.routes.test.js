@@ -138,6 +138,8 @@ describe("/api/auth/signup", () => {
 
     done();
   });
+
+  // TODO add test that the default role when not passed is user
 });
 
 describe("/api/auth/signin", () => {
@@ -169,7 +171,7 @@ describe("/api/auth/signin", () => {
     expect(response.body.username).toEqual(testUsers[0].username);
     expect(response.body.email).toEqual(testUsers[0].email);
     expect(response.body.accessToken).toBeTruthy();
-    expect(response.body.roles).toEqual(["ROLE_USER", "ROLE_ADMIN"]);
+    expect(response.body.roles).toEqual(["user", "admin"]);
     done();
   });
 });
