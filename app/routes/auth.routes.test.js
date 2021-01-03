@@ -3,6 +3,8 @@ require("dotenv").config();
 const app = require("../../server");
 const supertest = require("supertest");
 const db = require("../models");
+const User = require("../models/user.model");
+const e = require("express");
 
 beforeAll(async () => {
   const databaseName = "api-test";
@@ -17,14 +19,63 @@ beforeAll(async () => {
   // populate db collection with correct roles
   await Role.estimatedDocumentCount((err, count) => {
     if (!err && count === 0) {
-      db.roles.forEach((role) => {
-        new Role({
-          name: role,
-        }).save((err) => {
-          if (err) {
-            throw new Error(err);
+      db.roles.forEach(async (role) => {
+        try {
+          const newRole = new Role({ name: role });
+          await newRole.save();
+        } catch (e) {
+          throw e;
+        }
+      });
+    } else {
+      throw new Error(err);
+    }
+  });
+
+  // populate db collection with test users
+  await User.estimatedDocumentCount(async (err, count) => {
+    if (!err && count === 0) {
+      const testUsers = [
+        {
+          username: "adminTestUser",
+          email: "admin@test.com",
+          password: "test123!",
+          roles: ["admin", "user"],
+        },
+        {
+          username: "user1",
+          email: "user1@test.com",
+          password: "test123!",
+          roles: ["user"],
+        },
+      ];
+
+      // find and set role objectIds for the users
+      const parsedTestUsers = await Promise.all(
+        testUsers.map(async (user) => {
+          try {
+            if (user.roles && user.roles.length > 0) {
+              // find the correct roles
+              const foundRoles = await Role.find({ name: { $in: user.roles } });
+              user.roles = foundRoles.map((role) => role._id);
+            } else {
+              const userRole = await Role.findOne({ name: "user" });
+              user.roles = [userRole._id];
+            }
+            return user;
+          } catch (e) {
+            throw e;
           }
-        });
+        })
+      );
+
+      parsedTestUsers.forEach(async (user) => {
+        try {
+          const newUser = new User(user);
+          await newUser.save();
+        } catch (e) {
+          throw e;
+        }
       });
     } else {
       throw new Error(err);
@@ -37,9 +88,10 @@ const request = supertest(app);
 describe("/api/auth/signup", () => {
   it("should save a user to the DB when all the parameters are correct", async (done) => {
     const response = await request.post("/api/auth/signup").send({
+      username: "testuser",
       email: "test@test.com",
-      username: "test",
       password: "test123!",
+      roles: ["admin", "user"],
     });
     expect(response.status).toBe(200);
 
@@ -113,8 +165,33 @@ describe("/api/auth/signup", () => {
     done();
   });
 
-  // TODO add test for duplicate email
-  // TODO add test for duplicate username
+  it("should return 400 when email is already taken", async (done) => {
+    const response = await request.post("/api/auth/signup").send({
+      email: "admin@test.com",
+      username: "newUser",
+      password: "test123!",
+      roles: ["admin", "user"],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.message).toEqual("Failed! Email is already in use!");
+
+    done();
+  });
+
+  it("should return 400 when username is already taken", async (done) => {
+    const response = await request.post("/api/auth/signup").send({
+      email: "admin123@test.com",
+      username: "adminTestUser",
+      password: "test123!",
+      roles: ["admin", "user"],
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.message).toEqual(
+      "Failed! Username is already in use!"
+    );
+
+    done();
+  });
 });
 
 async function dropAllCollections() {
