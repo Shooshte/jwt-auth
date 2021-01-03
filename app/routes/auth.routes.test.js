@@ -3,84 +3,31 @@ require("dotenv").config();
 const app = require("../../server");
 const supertest = require("supertest");
 const db = require("../models");
-const User = require("../models/user.model");
-const e = require("express");
+
+const testUtils = require("../../utils/test.utils");
+
+const testUsers = [
+  {
+    username: "adminTestUser",
+    email: "admin@test.com",
+    password: "test123!",
+    roles: ["admin", "user"],
+  },
+  {
+    username: "user1",
+    email: "user1@test.com",
+    password: "test123!",
+    roles: ["user"],
+  },
+];
 
 beforeAll(async () => {
-  const databaseName = "api-test";
-  const url = `${db.baseUrl}${databaseName}`;
-  await db.mongoose.connect(url, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-
-  const Role = db.role;
-
+  // open mongoose db connection
+  await testUtils.connectDb("api-auth-signup");
   // populate db collection with correct roles
-  await Role.estimatedDocumentCount((err, count) => {
-    if (!err && count === 0) {
-      db.roles.forEach(async (role) => {
-        try {
-          const newRole = new Role({ name: role });
-          await newRole.save();
-        } catch (e) {
-          throw e;
-        }
-      });
-    } else {
-      throw new Error(err);
-    }
-  });
-
+  await testUtils.seedRoles();
   // populate db collection with test users
-  await User.estimatedDocumentCount(async (err, count) => {
-    if (!err && count === 0) {
-      const testUsers = [
-        {
-          username: "adminTestUser",
-          email: "admin@test.com",
-          password: "test123!",
-          roles: ["admin", "user"],
-        },
-        {
-          username: "user1",
-          email: "user1@test.com",
-          password: "test123!",
-          roles: ["user"],
-        },
-      ];
-
-      // find and set role objectIds for the users
-      const parsedTestUsers = await Promise.all(
-        testUsers.map(async (user) => {
-          try {
-            if (user.roles && user.roles.length > 0) {
-              // find the correct roles
-              const foundRoles = await Role.find({ name: { $in: user.roles } });
-              user.roles = foundRoles.map((role) => role._id);
-            } else {
-              const userRole = await Role.findOne({ name: "user" });
-              user.roles = [userRole._id];
-            }
-            return user;
-          } catch (e) {
-            throw e;
-          }
-        })
-      );
-
-      parsedTestUsers.forEach(async (user) => {
-        try {
-          const newUser = new User(user);
-          await newUser.save();
-        } catch (e) {
-          throw e;
-        }
-      });
-    } else {
-      throw new Error(err);
-    }
-  });
+  await testUtils.seedUsers(testUsers);
 });
 
 const request = supertest(app);
@@ -88,13 +35,12 @@ const request = supertest(app);
 describe("/api/auth/signup", () => {
   it("should save a user to the DB when all the parameters are correct", async (done) => {
     const response = await request.post("/api/auth/signup").send({
-      username: "testuser",
+      username: "admin",
       email: "test@test.com",
       password: "test123!",
       roles: ["admin", "user"],
     });
     expect(response.status).toBe(200);
-
     const user = await db.user.findOne({ email: "test@test.com" });
 
     expect(user.email).toBeTruthy();
@@ -194,26 +140,7 @@ describe("/api/auth/signup", () => {
   });
 });
 
-async function dropAllCollections() {
-  const collections = Object.keys(db.mongoose.connection.collections);
-  for (const collectionName of collections) {
-    const collection = db.mongoose.connection.collections[collectionName];
-    try {
-      await collection.drop();
-    } catch (error) {
-      // This error happens when you try to drop a collection that's already dropped. Happens infrequently.
-      // Safe to ignore.
-      if (error.message === "ns not found") return;
-      // This error happens when you use it.todo.
-      // Safe to ignore.
-      if (error.message.includes("a background operation is currently running"))
-        return;
-      console.log(error.message);
-    }
-  }
-}
-
 afterAll(async () => {
-  await dropAllCollections();
+  await testUtils.dropAllCollections();
   await db.mongoose.connection.close();
 });
