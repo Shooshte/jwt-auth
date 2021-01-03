@@ -140,6 +140,40 @@ describe("/api/auth/signup", () => {
   });
 });
 
+describe("/api/auth/signin", () => {
+  it("should return 404 when user is not found", async (done) => {
+    const response = await request.post("/api/auth/signin").send({
+      username: "veryLegitUser",
+      password: "veryLegitPassword",
+    });
+    expect(response.status).toBe(404);
+    expect(response.body.message).toEqual("User Not found.");
+    done();
+  });
+
+  it("should return 401 when password is incorrect", async (done) => {
+    const response = await request.post("/api/auth/signin").send({
+      username: "adminTestUser",
+      password: "veryLegitPassword",
+    });
+    expect(response.status).toBe(401);
+    expect(response.body.message).toEqual("Invalid Password!");
+    done();
+  });
+
+  it("should return the correct data when username and password are correct", async (done) => {
+    const response = await request.post("/api/auth/signin").send(testUsers[0]);
+
+    expect(response.status).toBe(200);
+    expect(response.body.id).toBeTruthy();
+    expect(response.body.username).toEqual(testUsers[0].username);
+    expect(response.body.email).toEqual(testUsers[0].email);
+    expect(response.body.accessToken).toBeTruthy();
+    expect(response.body.roles).toEqual(["ROLE_USER", "ROLE_ADMIN"]);
+    done();
+  });
+});
+
 afterAll(async () => {
   await testUtils.dropAllCollections();
   await db.mongoose.connection.close();
