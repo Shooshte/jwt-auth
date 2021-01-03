@@ -51,6 +51,29 @@ describe("/api/auth/signup", () => {
     done();
   });
 
+  it("should save a user with user permissions to the DB when all the parameters are correct and roles are not defined", async (done) => {
+    const response = await request.post("/api/auth/signup").send({
+      username: "user2",
+      email: "test2@test.com",
+      password: "test123!",
+    });
+    expect(response.status).toBe(200);
+    const user = await db.user.findOne({ email: "test2@test.com" }).lean();
+    const roles = await db.role.find({}).lean();
+
+    // get the expected user role id
+    const expectedRoles = Array.from(
+      roles
+        .filter((role) => role.name === "user")
+        .map((role) => role._id.toString())
+    );
+    // parse mongo ObjectIds to strings
+    const parsedRoles = user.roles.map((role) => role.toString());
+
+    expect(parsedRoles).toEqual(expectedRoles);
+    done();
+  });
+
   it("should return 400 when email is not provided", async (done) => {
     const response = await request.post("/api/auth/signup").send({
       username: "whatever",
@@ -138,8 +161,6 @@ describe("/api/auth/signup", () => {
 
     done();
   });
-
-  // TODO add test that the default role when not passed is user
 });
 
 describe("/api/auth/signin", () => {
