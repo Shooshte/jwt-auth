@@ -1,5 +1,6 @@
 const db = require("../app/models");
 const Role = require("../app/models/role.model");
+var bcrypt = require("bcryptjs");
 
 const connectDb = async (dbName) => {
   try {
@@ -21,14 +22,16 @@ const seedRoles = async () => {
     const count = await Role.estimatedDocumentCount();
     // if there are no roles in the DB, populate the DB with roles
     if (count === 0) {
-      db.roles.forEach(async (role) => {
-        try {
-          const newRole = new Role({ name: role });
-          await newRole.save();
-        } catch (e) {
-          throw e;
-        }
-      });
+      await Promise.all(
+        db.roles.map(async (role) => {
+          try {
+            const newRole = new Role({ name: role });
+            await newRole.save();
+          } catch (e) {
+            throw e;
+          }
+        })
+      );
     }
   } catch (e) {
     throw e;
@@ -61,14 +64,21 @@ const seedUsers = async (users) => {
       })
     );
 
-    parsedUsers.forEach(async (user) => {
-      try {
-        const newUser = new User(user);
-        await newUser.save();
-      } catch (e) {
-        throw e;
-      }
-    });
+    await Promise.all(
+      parsedUsers.map(async (user) => {
+        try {
+          const newUser = new User({
+            username: user.username,
+            email: user.email,
+            password: bcrypt.hashSync(user.password, 8),
+            roles: user.roles,
+          });
+          await newUser.save();
+        } catch (e) {
+          throw e;
+        }
+      })
+    );
   } catch (e) {
     throw e;
   }
