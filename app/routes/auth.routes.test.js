@@ -62,11 +62,10 @@ describe("/api/auth/signup", () => {
     const roles = await db.role.find({}).lean();
 
     // get the expected user role id
-    const expectedRoles = Array.from(
-      roles
-        .filter((role) => role.name === "user")
-        .map((role) => role._id.toString())
-    );
+    const expectedRoles = roles
+      .filter((role) => role.name === "user")
+      .map((role) => role._id.toString());
+
     // parse mongo ObjectIds to strings
     const parsedRoles = user.roles.map((role) => role.toString());
 
