@@ -32,35 +32,48 @@ checkParameters = (req, res, next) => {
 
 checkDuplicateUsernameOrEmail = (req, res, next) => {
   // Username
-  User.findOne({
-    username: req.body.username,
-  }).exec((err, user) => {
+  User.find({
+    $or: [
+      {
+        email: req.body.email,
+      },
+      { username: req.body.username },
+    ],
+  }).exec((err, users) => {
     if (err) {
       res.status(500).send({ message: err });
       return;
     }
 
-    if (user) {
-      res.status(400).send({ message: "Failed! Username is already in use!" });
-      return;
-    }
+    if (users) {
+      const duplicateEmails = users.filter(
+        (user) => user.email === req.body.email
+      );
+      const duplicateUsernames = users.filter(
+        (user) => user.username === req.body.username
+      );
 
-    // Email
-    User.findOne({
-      email: req.body.email,
-    }).exec((err, user) => {
-      if (err) {
-        res.status(500).send({ message: err });
+      if (duplicateEmails.length > 0 && duplicateUsernames.length > 0) {
+        res
+          .status(400)
+          .send({ message: "Failed! Username and email already in use!" });
         return;
       }
 
-      if (user) {
+      if (duplicateEmails.length > 0) {
         res.status(400).send({ message: "Failed! Email is already in use!" });
         return;
       }
 
+      if (duplicateUsernames.length > 0) {
+        res
+          .status(400)
+          .send({ message: "Failed! Username is already in use!" });
+        return;
+      }
+
       next();
-    });
+    }
   });
 };
 
