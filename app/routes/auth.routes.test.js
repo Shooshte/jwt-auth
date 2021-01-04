@@ -51,6 +51,15 @@ describe("/api/auth/signup", () => {
     done();
   });
 
+  it("should return 400 when username and email are allready in use", async (done) => {
+    const response = await request.post("/api/auth/signup").send(testUsers[0]);
+    expect(response.status).toBe(400);
+    expect(response.body.message).toEqual(
+      "Failed! Username and email already in use!"
+    );
+    done();
+  });
+
   it("should save a user with user permissions to the DB when all the parameters are correct and roles are not defined", async (done) => {
     const response = await request.post("/api/auth/signup").send({
       username: "user2",
